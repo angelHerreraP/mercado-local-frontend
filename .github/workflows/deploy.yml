@@ -25,6 +25,20 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
+    - name: Inject API URL
+      run: |
+        # Get ALB DNS Name
+        ALB_DNS=$(aws elbv2 describe-load-balancers --names "mercadolocal-mx-alb" --query "LoadBalancers[0].DNSName" --output text)
+        if [ "$ALB_DNS" == "None" ] || [ -z "$ALB_DNS" ]; then
+           echo "Warning: ALB not found, using placeholder"
+           ALB_DNS="placeholder-api-url"
+        fi
+        
+        echo "Injecting API URL: http://$ALB_DNS/api"
+        
+        # Replace placeholder in environment.prod.ts
+        sed -i "s|PLACEHOLDER_API_URL|http://$ALB_DNS/api|g" src/environments/environment.prod.ts
+
     - name: Build Angular App
       run: npm run build
 
